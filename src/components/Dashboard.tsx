@@ -4,16 +4,18 @@ import { Progress } from '@/components/ui/progress';
 import { useAppState } from '@/store';
 import { format } from 'date-fns';
 import { calculateChapterProgress } from '@/types';
-import { Target, Timer, Flame, Wallet, BookUp, Plus, Clock, Gift, Flag } from 'lucide-react';
+import { Target, Timer, Flame, Wallet, BookUp, Plus, Clock, Gift, Flag, User } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/AuthContext';
 
 export function Dashboard() {
   const { chapters, goals, tasks, transactions, exams, prayers, setGoals } = useAppState();
+  const { user } = useAuth();
 
   const [currentTime, setCurrentTime] = useState(new Date());
   
@@ -92,16 +94,24 @@ export function Dashboard() {
   const nextExamDaysLeft = nextExam ? calculateDaysLeft(nextExam.date) : null;
 
   const todayPrayers = prayers;
+  
+  const userName = user?.user_metadata?.full_name || 'User';
+  const avatarUrl = user?.user_metadata?.avatar_url;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <header className="flex justify-between items-end bg-[#09090b]/80 backdrop-blur-md sticky top-0 z-10 py-4 -mt-4 mb-4 border-b border-zinc-800">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-100">Today</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <p className="text-zinc-500 font-medium">{format(currentTime, 'EEEE, MMMM d')}</p>
-            <span className="w-1 h-1 rounded-full bg-zinc-700"></span>
-            <p className="text-zinc-400 font-mono tracking-tight">{format(currentTime, 'h:mm a')}</p>
+        <div className="flex items-center gap-4">
+          {avatarUrl ? (
+             <img src={avatarUrl} alt="Avatar" className="w-12 h-12 rounded-full border-2 border-zinc-700 object-cover" />
+          ) : (
+            <div className="w-12 h-12 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center border-2 border-zinc-700">
+              <User size={24} />
+            </div>
+          )}
+          <div>
+            <p className="text-sm text-zinc-400 font-medium">Have a great day,</p>
+            <h1 className="text-3xl font-bold tracking-tight text-zinc-100">{userName}</h1>
           </div>
         </div>
         <div className="hidden sm:flex gap-2">

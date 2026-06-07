@@ -13,7 +13,7 @@ import {
   Clock,
   Moon,
   Sun,
-  User
+  Phone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -79,6 +79,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </ScrollArea>
         
         <div className="p-4 border-t border-zinc-800 space-y-1">
+          <div className="px-3 pb-3 mb-3 border-b border-zinc-800/50 flex flex-col gap-1">
+            <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">Developer</span>
+            <span className="text-sm text-zinc-300 font-semibold tracking-tight">Shafiul Alam Sojib</span>
+            <span className="text-xs text-zinc-400 flex items-center gap-1.5 font-mono">
+              <Phone className="w-3 h-3" />
+              01979709261
+            </span>
+            <a href="https://mdshafiulalamsojib.blogspot.com" target="_blank" rel="noreferrer" className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
+              mdshafiulalamsojib.blogspot.com
+            </a>
+          </div>
           <button 
             onClick={toggleDark}
             className="flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-colors text-zinc-400 hover:bg-zinc-800/30 w-full"

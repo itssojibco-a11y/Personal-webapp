@@ -263,6 +263,7 @@ const persistState = async () => {
     transactions: globalState.transactions,
     exams: globalState.exams,
     prayers: globalState.prayers,
+    timestamp: Date.now(), // Add timestamp for conflict resolution
   };
 
   const userId = globalState.userId || "guest";
@@ -272,7 +273,10 @@ const persistState = async () => {
   // If user is logged in, try saving to Supabase
   if (globalState.userId) {
     try {
-      await supabase.from("user_data").upsert({ id: globalState.userId, data });
+      const { error } = await supabase.from("user_data").upsert({ id: globalState.userId, data });
+      if (error) {
+        console.error("Supabase Sync Error:", error.message);
+      }
     } catch (e) {
       // Fail silently if table does not exist
       console.warn(
@@ -383,17 +387,52 @@ export const initGlobalUser = (userId: string | null) => {
       .single()
       .then(({ data, error }) => {
         if (!error && data?.data) {
-          const parsed = data.data;
-          if (parsed.subjects) globalState.subjects = parsed.subjects;
-          if (parsed.chapters) globalState.chapters = parsed.chapters;
-          if (parsed.goals) globalState.goals = parsed.goals;
-          if (parsed.tasks) globalState.tasks = parsed.tasks;
-          if (parsed.transactions)
-            globalState.transactions = parsed.transactions;
-          if (parsed.exams) globalState.exams = parsed.exams;
-          if (parsed.prayers) globalState.prayers = parsed.prayers;
-          globalState.emit();
-          localStorage.setItem(`app_data_${userId}`, JSON.stringify(parsed));
+          const remoteData = data.data;
+          const remoteTimestamp = remoteData.timestamp || 0;
+          
+          // Get local timestamp
+          const localStr = localStorage.getItem(`app_data_${userId}`);
+          let localTimestamp = 0;
+          if (localStr) {
+            try {
+              const localParsed = JSON.parse(localStr);
+              localTimestamp = localParsed.timestamp || 0;
+            } catch(e) {}
+          }
+
+          // Conflict resolution: only overwrite if remote is newer or equals
+          if (remoteTimestamp >= localTimestamp) {
+            if (remoteData.subjects) globalState.subjects = remoteData.subjects;
+            if (remoteData.chapters) globalState.chapters = remoteData.chapters;
+            if (remoteData.goals) globalState.goals = remoteData.goals;
+            if (remoteData.tasks) globalState.tasks = remoteData.tasks;
+            if (remoteData.transactions)
+              globalState.transactions = remoteData.transactions;
+            if (remoteData.exams) globalState.exams = remoteData.exams;
+            if (remoteData.prayers) globalState.prayers = remoteData.prayers;
+            globalState.emit();
+            localStorage.setItem(`app_data_${userId}`, JSON.stringify(remoteData));
+          } else {
+            console.log("Local data is newer. Pushing to Supabase...");
+            // Local is newer, let's push it to Supabase so it's in sync!
+            // We use setTimeout to avoid doing it in the middle of current render cycle
+            setTimeout(() => {
+               globalState.emit();
+               const persistData = {
+                  subjects: globalState.subjects,
+                  chapters: globalState.chapters,
+                  goals: globalState.goals,
+                  tasks: globalState.tasks,
+                  transactions: globalState.transactions,
+                  exams: globalState.exams,
+                  prayers: globalState.prayers,
+                  timestamp: localTimestamp
+               };
+               supabase.from("user_data").upsert({ id: userId, data: persistData }).then(({error}) => {
+                  if (error) console.error("Force sync failed:", error.message);
+               });
+            }, 1000);
+          }
         }
       });
   }
