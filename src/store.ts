@@ -254,7 +254,7 @@ const INITIAL_PRAYERS: Prayer[] = [
 
 let syncTimeout: any;
 
-const persistState = async () => {
+const saveToLocal = () => {
   const data = {
     subjects: globalState.subjects,
     chapters: globalState.chapters,
@@ -263,37 +263,42 @@ const persistState = async () => {
     transactions: globalState.transactions,
     exams: globalState.exams,
     prayers: globalState.prayers,
-    timestamp: Date.now(), // Add timestamp for conflict resolution
+    timestamp: Date.now(),
   };
-
   const userId = globalState.userId || "guest";
-  // Save locally
   localStorage.setItem(`app_data_${userId}`, JSON.stringify(data));
+  return data;
+};
 
-  // If user is logged in, try saving to Supabase
+const syncToSupabase = async (data: any) => {
   if (globalState.userId) {
+    globalState.setSyncStatus("syncing");
     try {
       const { error } = await supabase.from("user_data").upsert({ id: globalState.userId, data });
       if (error) {
         console.error("Supabase Sync Error:", error.message);
+        globalState.setSyncStatus("error");
+      } else {
+        globalState.setSyncStatus("synced");
       }
     } catch (e) {
-      // Fail silently if table does not exist
-      console.warn(
-        "Could not sync to Supabase (user_data table might be missing)",
-      );
+      console.warn("Could not sync to Supabase");
+      globalState.setSyncStatus("error");
     }
   }
 };
 
 const notifyAndSave = () => {
   globalState.emit();
+  const data = saveToLocal(); // Save locally IMMEDIATELY so no data is lost on reload
+  
   clearTimeout(syncTimeout);
-  syncTimeout = setTimeout(persistState, 800);
+  syncTimeout = setTimeout(() => syncToSupabase(data), 1000); // Debounce API only
 };
 
 // Context/Global State setup:
 const globalState = {
+  syncStatus: "synced" as "synced" | "syncing" | "error",
   userId: null as string | null,
   subjects: INITIAL_SUBJECTS,
   chapters: INITIAL_CHAPTERS,
@@ -373,6 +378,10 @@ const globalState = {
       typeof update === "function" ? (update as any)(this.prayers) : update;
     notifyAndSave();
   },
+  setSyncStatus(status: "synced" | "syncing" | "error") {
+    this.syncStatus = status;
+    this.emit();
+  }
 };
 
 export const initGlobalUser = (userId: string | null) => {
@@ -386,6 +395,9 @@ export const initGlobalUser = (userId: string | null) => {
       .eq("id", userId)
       .single()
       .then(({ data, error }) => {
+        if (error) {
+           console.error("Supabase initial fetch error:", error.message);
+        }
         if (!error && data?.data) {
           const remoteData = data.data;
           const remoteTimestamp = remoteData.timestamp || 0;
@@ -456,6 +468,7 @@ export function useAppState() {
   const transactions = globalState.transactions;
   const exams = globalState.exams;
   const prayers = globalState.prayers;
+  const syncStatus = globalState.syncStatus;
 
   const toggleChapterProgress = (
     chapterId: string,
@@ -546,6 +559,7 @@ export function useAppState() {
     transactions,
     exams,
     prayers,
+    syncStatus,
     setGoals,
     setTasks,
     setTransactions,

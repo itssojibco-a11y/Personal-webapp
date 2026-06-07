@@ -13,10 +13,14 @@ import {
   Clock,
   Moon,
   Sun,
-  Phone
+  Phone,
+  Cloud, 
+  CloudOff, 
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useAppState } from '@/store';
 
 const NAV_ITEMS = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/' },
@@ -28,6 +32,7 @@ const NAV_ITEMS = [
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const { syncStatus } = useAppState();
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
       return document.documentElement.classList.contains('dark');
@@ -49,12 +54,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen bg-[#09090b] text-zinc-100 overflow-hidden transition-colors duration-300">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-64 flex-col border-r bg-[#0c0c0e] border-zinc-800 transition-colors">
-        <div className="h-16 flex items-center px-6 border-b border-zinc-800">
+        <div className="h-16 flex items-center justify-between px-6 border-b border-zinc-800">
           <div className="flex items-center gap-2 font-bold text-lg text-zinc-100 font-heading">
             <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs italic">
               ST
             </div>
             Study Tracker
+          </div>
+          
+          <div className="flex items-center justify-center" title={`Sync Status: ${syncStatus}`}>
+            {syncStatus === 'synced' && <Cloud className="w-4 h-4 text-emerald-500" />}
+            {syncStatus === 'syncing' && <RefreshCw className="w-4 h-4 text-blue-400 animate-spin" />}
+            {syncStatus === 'error' && <CloudOff className="w-4 h-4 text-red-500" />}
           </div>
         </div>
         
@@ -143,11 +154,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <NavLink
           to="/profile"
           className={({ isActive }) => cn(
-            "flex flex-col items-center justify-center gap-1 min-w-[3.5rem] w-full text-[10px] font-bold transition-colors uppercase tracking-tighter",
+            "flex flex-col items-center justify-center gap-1 min-w-[3.5rem] w-full text-[10px] font-bold transition-colors uppercase tracking-tighter relative",
             isActive ? "text-blue-500" : "text-zinc-500"
           )}
         >
-          <User className="w-5 h-5 mb-0.5" />
+          <div className="relative">
+             <User className="w-5 h-5 mb-0.5" />
+             {syncStatus === 'error' && <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-[#0c0c0e]" />}
+             {syncStatus === 'syncing' && <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full border border-[#0c0c0e] animate-pulse" />}
+          </div>
           <span className="truncate max-w-full">Profile</span>
         </NavLink>
       </nav>
