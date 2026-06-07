@@ -52,9 +52,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="h-16 flex items-center px-6 border-b border-zinc-800">
           <div className="flex items-center gap-2 font-bold text-lg text-zinc-100 font-heading">
             <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs italic">
-              OS
+              ST
             </div>
-            Life OS
+            Study Tracker
           </div>
         </div>
         

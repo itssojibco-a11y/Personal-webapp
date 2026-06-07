@@ -43,9 +43,10 @@ export function Auth() {
         <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col items-center mb-8">
-          <div className="w-12 h-12 bg-blue-500/20 text-blue-400 rounded-xl flex items-center justify-center mb-4">
-            <Feather size={24} />
+          <div className="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center mb-4 font-heading font-bold text-lg italic">
+            ST
           </div>
+          <h1 className="text-xl font-bold tracking-tight text-blue-500 mb-6 uppercase tracking-wider font-heading">Study Tracker</h1>
           <h2 className="text-2xl font-bold tracking-tight">
             {isLogin ? 'Welcome Back' : 'Create an Account'}
           </h2>
