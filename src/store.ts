@@ -153,6 +153,7 @@ const globalState = {
   currentUserEmail: "",
   language: (localStorage.getItem("app_lang") as "en" | "bn") || "en",
   listeners: new Set<() => void>(),
+  authSubscription: null as any,
   emit() {
     this.listeners.forEach((listener) => listener());
   },
@@ -191,8 +192,11 @@ const globalState = {
       }
     };
 
-    // First setup listener for auth changes
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    if (this.authSubscription) {
+      this.authSubscription.unsubscribe();
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         this.isAuthenticated = true;
         this.currentUserEmail = session.user.email || "";
@@ -211,6 +215,8 @@ const globalState = {
         this.emit();
       }
     });
+
+    this.authSubscription = subscription;
 
     const { data: { session } } = await supabase.auth.getSession();
     

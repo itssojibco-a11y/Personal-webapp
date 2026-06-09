@@ -23,33 +23,29 @@ export function AuthPage() {
     setError('');
 
     try {
+      // Setup a 15-second timeout for the authentication request
+      const timeoutPromise = new Promise<{data: any, error: any}>((_, reject) => 
+        setTimeout(() => reject(new Error('Request timed out. Please check your internet connection and try again.')), 15000)
+      );
+
+      let authPromise;
       if (isLogin) {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (error) {
-          setError(error.message);
-        } else if (data.user) {
-          setAuth(true, data.user.email || email);
-        }
+        authPromise = supabase.auth.signInWithPassword({ email, password });
       } else {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
+        authPromise = supabase.auth.signUp({ email, password });
+      }
 
-        if (error) {
-          setError(error.message);
-        } else if (data.user) {
-          // If email confirmation is required, you might need to handle that,
-          // but for basic setup we just log them in if user is returned
-          setAuth(true, data.user.email || email);
-        }
+      const { data, error } = await Promise.race([authPromise, timeoutPromise]);
+
+      if (error) {
+        setError(error.message || 'Authentication failed');
+      } else if (data?.user) {
+        setAuth(true, data.user.email || email);
+      } else {
+        setError('Unexpected response from server');
       }
     } catch (e: any) {
-      setError(e.message || 'An error occurred during authentication.');
+      setError(e?.message || 'An error occurred during authentication.');
     } finally {
       setLoading(false);
     }
